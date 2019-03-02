@@ -1,0 +1,121 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{graphicx}
+\usepackage{eso-pic}
+\usepackage{xspace}
+
+% PDF stuff
+\ifx\pdfoutput\undefined
+\else
+    \pdfpagewidth=210mm
+    \pdfpageheight=297mm
+\fi
+
+\newif\ifbanner\bannerfalse
+\bannerfalse
+\advance\oddsidemargin-5mm
+\advance\textwidth1cm
+
+\font\manual=manfnt
+\def\shared{\noindent\llap{\manual\char'170\kern.15em}}
+
+\def\heading#1{
+    \ifhmode\par\fi
+    \removelastskip
+    \vskip1ex plus 0.5ex minus 0.3 ex%\goodbreak
+    \noindent
+    \hbox to \hsize{\bf #1\hfill}
+    \smallskip\par\nobreak}
+
+
+\def\nicefrac#1/#2{\leavevmode%
+    \raise.5ex\hbox{\the\scriptfont0 #1}%
+    \kern-.1em/\kern-.15em%
+    \lower.25ex\hbox{\the\scriptfont0 #2}}
+
+\newdimen\scalewidth
+\scalewidth=0.3\hsize
+
+\def\xboxit#1{\hbox{\lower0.7ex\vbox{\hrule\hbox{\vrule\kern1pt
+    \vbox{\kern1pt\hbox{\strut\small #1}\kern1pt}\kern1pt\vrule}\hrule}}}
+
+\def\boxit#1{\hbox{\lower0.7ex\vbox{\hrule\hbox{\vrule\kern1pt
+    \vbox{\kern1pt\hbox to 1.4em
+    {\small\strut\hfil #1\hfil}\kern1pt}\kern1pt\vrule}\hrule}}}
+
+\def\sboxit{\hbox{\lower0.7ex\vbox{\hrule\hbox{\vrule\kern1pt
+    \vbox{\kern1pt\hbox to 1ex
+    {\small\strut\hfil}\kern1pt}\kern1pt\vrule}\hrule}}}
+
+\def\fiveboxes#1#2#3#4#5{\hbox to\scalewidth
+    {\boxit{#1}\hfil\boxit{#2}\hfil\boxit{#3}\hfil%
+     \boxit{#4}\hfil\boxit{#5}}}
+
+\def\onebox{\hbox to\scalewidth{\boxit{}}}
+
+\def\boxes{\onebox\ignorespaces}
+
+\def\void{\boxit{}}
+
+\def\xscale#1#2{%
+    \setbox0=\hbox{\boxes}%
+    \setbox1=\hbox to \wd0{\small\strut\hfill #2 $\to$}%
+    \setbox2=\hbox to \wd0{\small\strut $\gets$ #1 \hfill}%
+    \vbox{\vbox to 0pt{\vss\box1\box2\kern2pt}\vbox{\box0}}}
+
+\def\scale#1#2{%
+    \setbox0=\hbox{\boxes}%
+    \setbox1=\hbox to \wd0{\small\strut\hfill #2 $\to$}%
+    \setbox2=\hbox to \wd0{\small\strut $\gets$ #1 \hfill}%
+    \vbox{\medskip\box1\box2\kern2pt\box0}}
+
+\def\xshortscale#1#2{%
+    \setbox0=\hbox{\boxes}%
+    \setbox1=\hbox to \wd0{\small\strut $\gets$ #1 \hfill #2 $\to$}%
+    \vbox{\vbox to 0pt{\vss\box1\kern2pt}\vbox{\box0}}}
+
+\def\shortscale#1#2{%
+    \setbox0=\hbox{\boxes}%
+    \setbox1=\hbox to \wd0{\small\strut $\gets$ #1 \hfill #2 $\to$}%
+    \vbox{\medskip\box1\kern2pt\box0}}
+
+\def\agree{\scale{strongly disagree}{agree completely}}
+\def\xagree{\xscale{strongly disagree}{agree completely}}
+\def\xquality{\xshortscale{poor}{outstanding}}
+\def\quality{\shortscale{poor}{outstanding}}
+
+\def\linscale{%
+    \def\tick{\vrule height 5pt\relax}%
+    \vbox{\hbox to \scalewidth{\tick\hfil\tick\hfil\tick\hfil\tick}\hrule}}
+
+\def\question#1\par#2\par{\hbox to \hsize
+    {\vbox{\hsize=0.72\hsize #1\dotfill}\quad#2\hfil}\medskip\goodbreak}
+
+\def\freequestion#1\par{#1\par\nobreak
+    \begingroup\nobreak
+    \advance\leftskip by 2pc
+    \hrule width 0pt height 1.7\baselineskip\hrulefill
+    \hrule width 0pt height 1.7\baselineskip\hrulefill
+    \par
+    \medskip
+    \endgroup
+}
+
+\begin{document}
+
+\AddToShipoutPicture*
+    {\put(480,730){\includegraphics[width=3cm,height=3cm]{wikipedia-qr.png}}}
+
+\heading{Section Title}
+
+\question Is this a questionnaire? \par\boxes
+
+\question The seminar does a good job integrating. \par\boxes
+
+\question I made new professional contacts. \par\boxes
+
+\question One final question. \par\boxes
+
+\shared\freequestion Suggestions for group composition:
+
+\end{document}
+
