@@ -24,9 +24,10 @@ def show(img):
 # PyZbar
 qr_codes = pyzbar.decode(orig)  # Benchmark
 image = orig.copy()
+colors = [(255,0,0), (0,255,0), (120,155,120), (0,0,255)]
 for obj in qr_codes:
-    for p in obj.polygon:
-        cv.circle(image, (p.x, p.y), 1, (0,255,0), 9)
+    for p, c in zip(obj.polygon, colors):
+        cv.circle(image, (p.x, p.y), 1, c, 9)
 show(image)
 
 

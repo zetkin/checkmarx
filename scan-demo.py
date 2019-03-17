@@ -29,7 +29,7 @@ def draw_contour(img, contour):
 def edge_detect(img):
     """Return a single channel image depicting edged as high-intensity areas."""
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    gray = cv.GaussianBlur(gray, (15, 15), 0)
+    gray = cv.GaussianBlur(gray, (5, 5), 0)
     return cv.Canny(gray, 75, 200)
 
 
@@ -51,10 +51,7 @@ def locate_document_contour(img):
         # ...   an algorithm based on the lenght and point-count. We can also assume
         # ...   that the predominant color will be white.
         if len(approx) == 4:
-            paper_contour = approx
-            break
-
-    return paper_contour
+            return approx
 
 
 def order_points(pts):
@@ -62,6 +59,7 @@ def order_points(pts):
     # such that the first entry in the list is the top-left,
     # the second entry is the top-right, the third is the
     # bottom-right, and the fourth is the bottom-left
+    import ipdb ; ipdb.set_trace()
     rect = np.zeros((4, 2), dtype = "float32")
 
     # the top-left point will have the smallest sum, whereas
@@ -128,9 +126,14 @@ if __name__ == "__main__":
     if args.debug:
         cv.imshow("A", edged)
         wait()
-        exit()
 
     contour = locate_document_contour(edged)
+    if contour is None:
+        raise Exception("ERR")
+
+    if args.debug:
+        draw_contour(image, contour)
+
     warped = four_point_transform(orig, contour.reshape(4, 2))
 
     # convert the warped image to grayscale, then threshold it
