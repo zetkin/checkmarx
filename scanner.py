@@ -263,24 +263,28 @@ def shrink_countour(contour, shrinkage, shape):
 
 
 
-def area_mean(img, contour):
+def percentage_colored(img, contour):
     mask = np.zeros(img.shape, dtype="uint8")
     cv.drawContours(mask, [contour], -1, 255, -1)  # Draw filled contour on mask
-    mask = cv.bitwise_and(img, img, mask=mask)
-    return mask.sum() / cv.contourArea(contour)
+    mask = cv.bitwise_and(img, mask)
+    # NB sometimes values over 255 are returned, this is a result of how the
+    # contour is draw on the mask, the area of the contour is calculated as
+    # smaller than the absolute number of pixels in the mask.
+    return 1 - min(mask.sum() / cv.contourArea(contour), 255.0) / 255
 
 
-def checked_contours(img, contours):
+def checked_contours(img, contours, threshold=0.07):
     """Find rectangles which have been checked.
 
-    Method:
-        1. Extract the pixel mean within each contour
-        2. Use the OTSU algorithm to split unmarked and marked boxes
+    Args:
+        img: Image. This should be clipped to {0,1} values.
+        contours: Contours to extract.
+        threshold: Percentage of colored pixels to determine whether a check
+          box is colored. E.g. 0.07 -> if more than 7% of the check box is
+          colored, the box is considered checked.
     """
-    extractions = [area_mean(img, c) for c in contours]
-    means = [e.mean() for e in extractions]
-    threshold = 220.0
-    return [m < threshold for m in means]
+    color = [percentage_colored(img, c) for c in contours]
+    return [c > threshold for c in color]
 
 
 def main():
@@ -293,6 +297,11 @@ def main():
 
     image = cv.imread(args.image)
     config = DocConfig  # TODO: Test others
+
+    # Draw a circle on image
+    # im = cv.circle(image, (614, 309), 3, (0,0,0), -1)
+    # cv.imwrite("forms/questionnaire3.png", im)
+    # exit()
 
     # TODO: Use `locate_document_contour` to try and support the estimated
     # contour from QR contour estimator
@@ -338,7 +347,9 @@ def main():
             draw_contour(warped, inners[i])
 
     checked = checked_contours(clipped, inners)
-    print(checked)
+    for check, field in zip(checked, config.fields):
+        mark = "x" if check else " "
+        print(f"[{mark}] {field}")
 
 
 if __name__ == "__main__":
