@@ -45,9 +45,11 @@ Results
 -------
 
 Inferred document shape from QR code:
+
 ![Document](static/img/whole.png)
 
 Discovered checkbox:
+
 ![Document](static/img/checkbox.png)
 
 Result:
