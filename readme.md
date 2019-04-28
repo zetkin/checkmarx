@@ -2,43 +2,39 @@
 Checkbox Document Scanner
 =========================
 
-A prototype document scanner for finding checkboxes and determining which of
-them have been checked.
+A prototype document scanner for finding checkboxes in questionnaires and
+determining which of them have been marked.
+
+A QR code will be used to define characteristics of the questionnaire (likely
+via an online resource rather than directly encoded in the QR code), such as:
+  * Document size in mm (e.g. `(210, 297)` for A4)
+  * Checkbox sizes in mm
+  * QR code size in mm
+  * QR code position offset in mm
+  * Question fields
+
+This information will be used to locate the checkboxes and determine which have
+been marked and their corresponding questions.
 
 
 Requirements
 ------------
 
-This project relies fundamentally on a good QR code detector. The polygon
-output for the corner points of the QR code are used to infer the document's
-coordinates, which in turn is used to infer checkbox sizes (in pixels, the
-sizes in mm must be defined).
+This project relies heavily on a good QR code detector. The polygon output of
+the QR code is used to infer the document's coordinates, which in turn is used
+to infer checkbox sizes (in pixels, the sizes in mm must be defined).
+
+At the moment `pyzbar` is used (which uses the `zbar` project). `zbar` seems a
+bit unreliable, especially in cases where the QR code has been rotated. It also
+does not output detailed information about the orientation of the QR code,
+which could be very useful to speed up processing time.
 
 Library requirements:
 * Python 3
+* `zbar` (install using your package manager of choice)
 * `numpy~=1.16.2`
 * `opencv-python~=4.0`
 * `pyzbar~=0.1.8`
-
-
-QR Code Data
-------------
-
-The QR code should encode a url which can be used to fetch a Json object
-containing all doc information:
-
-```json
-    "page_size": A4_SIZE,
-    "checkbox_size": (12, 10),
-    "qr_size": (24, 24),
-    "qr_offset": = (14, 14),
-    "fields": (
-        "Is this a questionnaire?",
-        "The seminar does a good job integrating.",
-        "I made new professional contacts.",
-        "One final question."
-    ),
-```
 
 
 Results
@@ -60,10 +56,48 @@ Result:
 [ ] One final question.
 ```
 
+Implementation Details
+----------------------
+
+### Processing Flow
+
+The entire processing flow occurs as follows:
+  #. Find a QR code using `pyzbar`
+  #. Fetch the document config from the QR code message
+  #. Infer the document shape (in pixels) based on the size of the QR polygon,
+     and the details from the document config
+  #. Extract and threshold the document from the whole image to produce a single
+     channel binary image
+  #. Collect all checkboxes in the document by searching for contours which
+     match the stated size of the checkboxes from the config (these are sorted
+     by vertical position)
+  #. Determine which boxes are marked based on whether they have over a certain
+     percentage of black pixels
+  #. Return an array of marked boxes, sorted in descending order
+  #. Profit
 
 
-Resources
----------
+### QR Code Data
+
+The QR code should encode a URL which can be used to fetch a JSON object
+containing all document information:
+
+```json
+    "page_size": [210, 297],
+    "checkbox_size": [12, 10],
+    "qr_size": [24, 24],
+    "qr_offset": = [14, 14],
+    "fields": [
+        "Is this a questionnaire?",
+        "The seminar does a good job integrating.",
+        "I made new professional contacts.",
+        "One final question."
+    ]
+```
+
+
+Further Resources
+-----------------
 
 https://docs.opencv.org/3.4/da/d6e/tutorial_py_geometric_transformations.html
 
