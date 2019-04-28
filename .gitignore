@@ -1,8 +1,10 @@
-
 __pycache__/
 *.png
 *.jpg
 *.aux
 *.log
 *.pdf
+.venv
+
 !static/img/*
+!forms/questionnaire-filled.png

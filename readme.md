@@ -37,6 +37,18 @@ Library requirements:
 * `pyzbar~=0.1.8`
 
 
+Usage
+-----
+
+Simply: `python scanner.py [-h] --image IMAGE [--debug]`
+
+If the `--debug` flag is used, extra information will be visualised during
+the processing / inference stages.
+
+Using the example image `forms/questionnaire-filled.png` should reproduce the
+following results.
+
+
 Results
 -------
 
