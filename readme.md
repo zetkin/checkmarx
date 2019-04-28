@@ -62,19 +62,19 @@ Implementation Details
 ### Processing Flow
 
 The entire processing flow occurs as follows:
-  #. Find a QR code using `pyzbar`
-  #. Fetch the document config from the QR code message
-  #. Infer the document shape (in pixels) based on the size of the QR polygon,
+  1. Find a QR code using `pyzbar`
+  2. Fetch the document config from the QR code message
+  3. Infer the document shape (in pixels) based on the size of the QR polygon,
      and the details from the document config
-  #. Extract and threshold the document from the whole image to produce a single
+  4. Extract and threshold the document from the whole image to produce a single
      channel binary image
-  #. Collect all checkboxes in the document by searching for contours which
+  5. Collect all checkboxes in the document by searching for contours which
      match the stated size of the checkboxes from the config (these are sorted
      by vertical position)
-  #. Determine which boxes are marked based on whether they have over a certain
+  6. Determine which boxes are marked based on whether they have over a certain
      percentage of black pixels
-  #. Return an array of marked boxes, sorted in descending order
-  #. Profit
+  7. Return an array of marked boxes, sorted in descending order
+  8. Profit
 
 
 ### QR Code Data
