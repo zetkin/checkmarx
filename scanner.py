@@ -10,35 +10,16 @@ import cv2 as cv
 import numpy as np
 from pyzbar import pyzbar
 from pyzbar.locations import Point
+from config import A4_SIZE, TEST_CONFIG, FEMINISTISKA_CONFIG
 
-A4_SIZE = (210, 297)
 
+def gkern(kernlen=21, nsig=3):
+    """Returns a 2D Gaussian kernel."""
 
-TEST_CONFIG = {
-    # A document config will contain all information pertaining to a
-    # checkbox-style questionnaire.
-    # All sizes have the format (width, height) and units of mm.
-    # Attributes:
-    #     page_size: Size of the document.
-    #     checkbox_size: Size of a checkbox in the document.
-    #     qr_size: Size of the QR code.
-    #     qr_offset: Offset from the top-right corner of the QR code to the
-    #       top-right corner of the document.
-    #     x_scale: Document width / QR code width.
-    #     y_scale: Document height / QR code height.
-    #     fields: Questions in the questionnaire.
-
-    "page_size": A4_SIZE,
-    "checkbox_size": (8.7, 6),
-    "qr_size": (24, 24),
-    "qr_offset": (14, 14),
-    "fields": (
-        "Is this a questionnaire?",
-        "The seminar does a good job integrating.",
-        "I made new professional contacts.",
-        "One final question."
-    ),
-}
+    x = np.linspace(-nsig, nsig, kernlen + 1)
+    kern1d = np.diff(st.norm.cdf(x))
+    kern2d = np.outer(kern1d, kern1d)
+    return kern2d / kern2d.sum()
 
 
 def get_single_qr(img):
@@ -51,7 +32,7 @@ def get_single_qr(img):
 
 def fetch_config(url: str) -> dict:
     """Given a QR decoded url, return the doc config."""
-    return TEST_CONFIG
+    return FEMINISTISKA_CONFIG
 
 
 def wait():
@@ -73,11 +54,13 @@ def locate_document_contour(img):
     # TODO: This is currently an unused function but could be sed to support
     # the estimated document contour calculated from the QR coordinates.
 
-    cnts, _ = cv.findContours(edged.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-    cnts = sorted(cnts, key=cv.contourArea, reverse=True)[:5]  # 5 largest contours
+    contours, _ = cv.findContours(edged.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv.contourArea, reverse=True)[
+        :5
+    ]  # 5 largest contours
 
     # loop over the contours
-    for c in cnts:
+    for c in contours:
         # approximate the contour
         peri = cv.arcLength(c, True)
         approx = cv.approxPolyDP(c, 0.02 * peri, True)
@@ -118,11 +101,10 @@ def four_point_transform(image, pts):
     # (i.e. top-down view) of the image, again specifying points
     # in the top-left, top-right, bottom-right, and bottom-left
     # order
-    dst = np.array([
-        [0, 0],
-        [maxWidth - 1, 0],
-        [maxWidth - 1, maxHeight - 1],
-        [0, maxHeight - 1]], dtype = "float32")
+    dst = np.array(
+        [[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]],
+        dtype="float32",
+    )
 
     # compute the perspective transform matrix and then apply it
     M = cv.getPerspectiveTransform(rect, dst)
@@ -134,7 +116,7 @@ def four_point_transform(image, pts):
 
 def euclidean_distance(a: Point, b: Point) -> float:
     """Euclidean distance between two points."""
-    return np.sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
+    return np.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
 
 
 def rotation(a: Point, b: Point) -> float:
@@ -150,7 +132,7 @@ def locate_document_contour_qr(
     qr_coords: List[Point],
     page_size: Tuple[int, int],
     qr_size: Tuple[int, int],
-    qr_offset: Tuple[int, int]
+    qr_offset: Tuple[int, int],
 ):
     """Based on finding a single QR code in the image, return estimated
     document coordinates based on the factors {X,Y}_{SCALE,BUFFER}.
@@ -224,8 +206,8 @@ def shrink_countour(contour, shrinkage, shape):
         3. Add centre x/y.
     """
     M = cv.moments(contour)
-    cx = M['m10'] / M['m00']
-    cy = M['m01'] / M['m00']
+    cx = M["m10"] / M["m00"]
+    cy = M["m01"] / M["m00"]
     centre = np.array((cx, cy)).reshape(1, 1, -1)
     new_contour = (contour - centre) * shrinkage + centre
     # new_contour[:, 0, 0] = new_contour[:, 0, 0].clip(0, shape[0])
@@ -242,52 +224,79 @@ def clip_image(img):
     )
 
 
-def _n_countour_edges(contour):
-    perimeter = cv.arcLength(contour, closed=True)
-    return len(cv.approxPolyDP(contour, 0.02 * perimeter, closed=True))
-
-
-def locate_rectangles(img, area: Tuple[int, int], threshold=0.05):
-    """Locate all rectangles in an image that have an area which falls
-    within +/- :arg:`threshold` percent of :arg:`area`."""
-    cnts, _ = cv.findContours(img.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-
-    # Filter by area
+def has_area(contour, area, threshold):
+    """Return whether a contour has an area within a given threshold."""
     max_area = area * (1 + threshold)
     min_area = area * (1 - threshold)
-    cnts = [c for c in cnts if (min_area < cv.contourArea(c) < max_area)]
+    return min_area < cv.contourArea(contour) < max_area
 
-    # Filter four-sided countours (VERY approximate)
-    cnts = [c for c in cnts if _n_countour_edges(c) < 10]
 
-    return cnts
+def four_sided(contour):
+    """Verrrry approximate function for whether a contour is four-sided."""
+    perimeter = cv.arcLength(contour, closed=True)
+    return 2 < len(cv.approxPolyDP(contour, 0.02 * perimeter, closed=True)) < 6
+
+
+def aspect_ratio(contour, ar, threshold):
+    """Return whether a contour has an aspect ratio within a given threshold."""
+    _x, _y, w, h = cv.boundingRect(contour)
+    return ar * (1 - threshold) < w / h < ar * (1 + threshold)
+
+
+def within_alignment():
+    """Given a set of contours, find a common vertical line and remove
+    those which fall outside."""
+    pass
+
+
+def locate_rectangles(img, area, ar, threshold=0.40):
+    """Locate all rectangles in an image that have an area which falls
+    within +/- :arg:`threshold` percent of :arg:`area`."""
+    contours, _ = cv.findContours(img.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+
+    for f in (
+        lambda x: has_area(x, area, threshold),
+        four_sided,
+        lambda x: aspect_ratio(x, ar, threshold),
+    ):
+        contours = filter(f, contours)
+
+    return contours
 
 
 def get_checkboxes(img, page_size, checkbox_size):
     """Return a list of checkboxes, ordered by vertical location in ``img``"""
     # Get checkbox area in pixels^2
     sf = img.shape[0] / page_size[1]  # px/mm
-    area_px = np.prod(checkbox_size) * sf**2
-    boxes = locate_rectangles(img, area_px)
-    boxes = sorted(boxes, key=lambda x: centrepoint(x)[1])
+    area_px = np.prod(checkbox_size) * sf ** 2
+    # TODO: Also filter by aspect ratio
+    boxes = locate_rectangles(img, area_px, checkbox_size[0] / checkbox_size[1])
+    boxes = sorted(boxes, key=lambda x: centrepoint(x)[1])  # Sort by highest on page
     return [
-        shrink_countour(b, 0.8, img.shape[::-1]).round().astype(np.int64)
-        for b in boxes
+        shrink_countour(b, 0.9, img.shape[::-1]).round().astype(np.int64) for b in boxes
     ]
 
 
+def extract_contour(image, contour):
+    """Extract the image data within a contour."""
+    mask = np.zeros(image.shape[:-1], dtype="uint8")
+    cv.drawContours(mask, [contour], -1, 1, -1)
+    mask = np.stack([mask,] * image.shape[-1], axis=-1)
+    return image * mask
+
+
 def percentage_colored(img, contour):
-    """Return the percemtage of contour within a binary image which is colored."""
+    """Return the percentage of contour within a binary image which is colored."""
     mask = np.zeros(img.shape, dtype="uint8")
     cv.drawContours(mask, [contour], -1, 1, -1)  # Draw filled contour on mask
-    mask = cv.bitwise_and(img, mask)
-    # NB sometimes values over 1 are returned, this is a result of how the
-    # contour is drawn on the mask, the area of the contour is calculated as
-    # smaller than the absolute number of pixels in the mask.
-    return 1 - min(mask.sum() / cv.contourArea(contour), 1.0)
+    area = (mask > 0).sum()
+    extracted = cv.bitwise_and(img, mask)
+    # TODO: We could multiply by a gaussian kernel here to give greater weight
+    # to the central pixels
+    return 1 - extracted.sum() / area
 
 
-def checked_contours(img, contours, threshold=0.07):
+def checked_contours(img, contours, threshold):
     """Find rectangles which have been checked.
 
     Args:
@@ -308,7 +317,9 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument("--image", required=True, help="input image")
-    parser.add_argument("--debug", action="store_true", help="perform extra debug steps")
+    parser.add_argument(
+        "--debug", action="store_true", help="perform extra debug steps"
+    )
     args = parser.parse_args()
 
     image = cv.imread(args.image)
@@ -325,19 +336,19 @@ def main():
         qr_obj.polygon,
         config["page_size"],
         config["qr_size"],
-        config["qr_offset"]
+        config["qr_offset"],
     )
     contour_np = np.array(contour).astype("int32")
 
     if args.debug:
         draw_contour(image, contour_np.reshape(4, 1, 2))
 
-    warped = four_point_transform(image, contour_np)
+    image = four_point_transform(image, contour_np)
     if args.debug:
-        cv.imshow("A", warped)
+        cv.imshow("A", image)
         wait()
 
-    clipped = clip_image(warped)
+    clipped = clip_image(image)
     if args.debug:
         cv.imshow("A", clipped)
         wait()
@@ -345,10 +356,11 @@ def main():
     checkboxes = get_checkboxes(clipped, config["page_size"], config["checkbox_size"])
 
     if args.debug:
-        for box in checkboxes:
-            draw_contour(warped, box)
+        print(f"Found {len(checkboxes)} check boxes")
+        for contour in checkboxes:
+            draw_contour(image, contour)
 
-    checked = checked_contours(clipped, checkboxes)
+    checked = checked_contours(clipped, checkboxes, threshold=0.01)
     for check, field in zip(checked, config["fields"]):
         mark = "x" if check else " "
         print(f"[{mark}] {field}")
