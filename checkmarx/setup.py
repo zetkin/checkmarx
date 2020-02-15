@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 
 EXTRAS_REQUIRE = {
     "lint": ["black==19.10b0", "isort==4.3.21", "pylint==2.4.4"],
-    "test": ["pytest==5.2.2", "pytest-cov==2.8.1"],
+    "test": ["pytest==5.2.2", "pytest-cov==2.8.1", "requests==2.22.0"],
 }
 
 setup(
@@ -26,6 +26,7 @@ setup(
         "pydantic==1.4",
         "python-multipart==0.0.5",
         "pyzbar~=0.1.8",
+        "starlette==0.12.9",
         "uvicorn==0.11.2",
     ],
     tests_require=EXTRAS_REQUIRE["test"],

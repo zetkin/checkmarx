@@ -4,8 +4,6 @@ Document Configs
 
 A document config will contain all information pertaining to a
 checkbox-style questionnaire.
-
-All sizes have the format (width, height) and units of mm.
 """
 from typing import List
 
@@ -14,6 +12,8 @@ import pydantic
 
 class Config(pydantic.BaseModel):
     """
+    All sizes have the format (width, height) and units of mm.
+
     Attributes:
         page_size: Size of the document.
         checkbox_size: Size of a checkbox in the document.

@@ -12,6 +12,7 @@ from pyzbar import pyzbar
 from pyzbar.locations import Point
 
 from checkmarx.config import A4_SIZE, FEMINISTISKA_CONFIG
+from checkmarx.exceptions import QRNotFound
 
 
 def gkern(kernlen=21, nsig=3):
@@ -27,7 +28,7 @@ def get_single_qr(img):
     """Get a single QR code from an image."""
     qr_codes = pyzbar.decode(img)
     if len(qr_codes) != 1:
-        raise RuntimeError(f"Expected 1 QR code, found {len(qr_codes)}")
+        raise QRNotFound(f"Expected 1 QR code, found {len(qr_codes)}")
     return qr_codes[0]
 
 
@@ -316,7 +317,7 @@ def checked_contours(img, contours, threshold):
     return [[c > threshold for c in color_columns] for color_columns in color]
 
 
-def main(image, debug):
+def main(image, debug=False):
     image = cv.imread(image)
     qr_obj = get_single_qr(image)
     config = fetch_config(qr_obj.data.decode())
