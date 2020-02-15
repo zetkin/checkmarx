@@ -10,7 +10,8 @@ import cv2 as cv
 import numpy as np
 from pyzbar import pyzbar
 from pyzbar.locations import Point
-from config import A4_SIZE, TEST_CONFIG, FEMINISTISKA_CONFIG
+
+from scanner.config import A4_SIZE, FEMINISTISKA_CONFIG
 
 
 def gkern(kernlen=21, nsig=3):
@@ -30,7 +31,7 @@ def get_single_qr(img):
     return qr_codes[0]
 
 
-def fetch_config(url: str) -> dict:
+def fetch_config(url):
     """Given a QR decoded url, return the doc config."""
     return FEMINISTISKA_CONFIG
 
@@ -310,61 +311,44 @@ def checked_contours(img, contours, threshold):
     return [c > threshold for c in color]
 
 
-def main():
-    # TODO: Test other doc configs
-
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser()
-    parser.add_argument("--image", required=True, help="input image")
-    parser.add_argument(
-        "--debug", action="store_true", help="perform extra debug steps"
-    )
-    args = parser.parse_args()
-
-    image = cv.imread(args.image)
+def main(image, debug):
+    image = cv.imread(image)
     qr_obj = get_single_qr(image)
     config = fetch_config(qr_obj.data.decode())
-
-    # Draw a circle on image
-    # im = cv.circle(image, (614, 309), 3, (0,0,0), -1)
-    # cv.imwrite("forms/questionnaire3.png", im)
-    # exit()
 
     contour = locate_document_contour_qr(
         image,
         qr_obj.polygon,
-        config["page_size"],
-        config["qr_size"],
-        config["qr_offset"],
+        config.page_size,
+        config.qr_size,
+        config.qr_offset,
     )
     contour_np = np.array(contour).astype("int32")
 
-    if args.debug:
+    if debug:
         draw_contour(image, contour_np.reshape(4, 1, 2))
 
     image = four_point_transform(image, contour_np)
-    if args.debug:
+    if debug:
         cv.imshow("A", image)
         wait()
 
     clipped = clip_image(image)
-    if args.debug:
+    if debug:
         cv.imshow("A", clipped)
         wait()
 
-    checkboxes = get_checkboxes(clipped, config["page_size"], config["checkbox_size"])
+    checkboxes = get_checkboxes(clipped, config.page_size, config.checkbox_size)
 
-    if args.debug:
+    if debug:
         print(f"Found {len(checkboxes)} check boxes")
         for contour in checkboxes:
             draw_contour(image, contour)
 
     checked = checked_contours(clipped, checkboxes, threshold=0.01)
-    for check, field in zip(checked, config["fields"]):
+    result = []
+    for check, field in zip(checked, config.checkbox_titles):
         mark = "x" if check else " "
-        print(f"[{mark}] {field}")
+        result.append((field, mark))
 
-
-if __name__ == "__main__":
-    main()
+    return result

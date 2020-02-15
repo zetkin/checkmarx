@@ -1,0 +1,6 @@
+static
+sandbox
+*.egg-info/
+forms
+.git
+Dockerfile
