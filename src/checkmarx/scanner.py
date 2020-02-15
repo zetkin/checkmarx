@@ -267,6 +267,7 @@ def locate_rectangles(img, area, ar, threshold=0.40):
 
 def get_checkboxes(img, page_size, checkbox_size):
     """Return a list of checkboxes, ordered by vertical location in ``img``"""
+    # TODO: Perform appropriate column grouping using n-columns from checkbox_titles
     # Get checkbox area in pixels^2
     sf = img.shape[0] / page_size[1]  # px/mm
     area_px = np.prod(checkbox_size) * sf ** 2
@@ -274,7 +275,8 @@ def get_checkboxes(img, page_size, checkbox_size):
     boxes = locate_rectangles(img, area_px, checkbox_size[0] / checkbox_size[1])
     boxes = sorted(boxes, key=lambda x: centrepoint(x)[1])  # Sort by highest on page
     return [
-        shrink_countour(b, 0.9, img.shape[::-1]).round().astype(np.int64) for b in boxes
+        [shrink_countour(b, 0.9, img.shape[::-1]).round().astype(np.int64)]
+        for b in boxes
     ]
 
 
@@ -307,8 +309,11 @@ def checked_contours(img, contours, threshold):
           box is colored. E.g. 0.07 -> if more than 7% of the check box is
           colored, the box is considered checked.
     """
-    color = [percentage_colored(img, c) for c in contours]
-    return [c > threshold for c in color]
+    color = [
+        [percentage_colored(img, c) for c in contour_columns]
+        for contour_columns in contours
+    ]
+    return [[c > threshold for c in color_columns] for color_columns in color]
 
 
 def main(image, debug):
@@ -317,11 +322,7 @@ def main(image, debug):
     config = fetch_config(qr_obj.data.decode())
 
     contour = locate_document_contour_qr(
-        image,
-        qr_obj.polygon,
-        config.page_size,
-        config.qr_size,
-        config.qr_offset,
+        image, qr_obj.polygon, config.page_size, config.qr_size, config.qr_offset,
     )
     contour_np = np.array(contour).astype("int32")
 
@@ -346,9 +347,6 @@ def main(image, debug):
             draw_contour(image, contour)
 
     checked = checked_contours(clipped, checkboxes, threshold=0.01)
-    result = []
-    for check, field in zip(checked, config.checkbox_titles):
-        mark = "x" if check else " "
-        result.append((field, mark))
+    result = list(np.array(config.checkbox_titles)[np.array(checked)])
 
     return result
