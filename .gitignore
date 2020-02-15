@@ -5,8 +5,7 @@ __pycache__/
 *.log
 *.pdf
 .venv
-src/scanner.egg-info/
-scanner.egg-info/
+src/CheckMarx.egg-info/
 
 !static/img/*
 !forms/questionnaire-filled.png
