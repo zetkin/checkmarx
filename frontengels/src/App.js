@@ -23,6 +23,8 @@ class App extends React.Component {
             onChange={(picture) => { this.setState({ picture }); }}
             imgExtension={['.jpg', '.png']}
           />
+          <button
+            onClick={()=>{}} disabled={!this.state.picture}>Check Marx</button>
         </div>
       );
     }
