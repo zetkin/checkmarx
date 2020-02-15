@@ -5,7 +5,7 @@ from pprint import pprint
 
 import fastapi
 
-from scanner import scanner
+from checkmarx import scanner
 
 
 APP = fastapi.FastAPI()

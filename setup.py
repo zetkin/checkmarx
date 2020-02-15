@@ -10,9 +10,9 @@ EXTRAS_REQUIRE = {
 }
 
 setup(
-    name="scanner",
+    name="CheckMarx",
     version="0.0.1",
-    description="Document Scanner",
+    description="Document OMR",
     license="Proprietary",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
@@ -31,6 +31,6 @@ setup(
     tests_require=EXTRAS_REQUIRE["test"],
     extras_require=EXTRAS_REQUIRE,
     zip_safe=True,
-    entry_points={"console_scripts": ["scanner = scanner.main:main"]},
+    entry_points={"console_scripts": ["checkmarx = checkmarx.main:main"]},
 )
 

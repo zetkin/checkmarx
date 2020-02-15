@@ -1,9 +1,8 @@
-
-Checkbox Document Scanner
-=========================
+CheckMarx
+=========
 
 A prototype document scanner for finding checkboxes in questionnaires and
-determining which of them have been marked.
+determining which of them have been marxed.
 
 A QR code will be used to define characteristics of the questionnaire (likely
 via an online resource rather than directly encoded in the QR code), such as:
@@ -11,10 +10,10 @@ via an online resource rather than directly encoded in the QR code), such as:
   * Checkbox sizes in mm
   * QR code size in mm
   * QR code position offset in mm
-  * Question fields
+  * Checkmark titles
 
 This information will be used to locate the checkboxes and determine which have
-been marked and their corresponding questions.
+been marxed and their corresponding questions.
 
 
 Requirements
@@ -32,15 +31,13 @@ which could be very useful to speed up processing time.
 Library requirements:
 * Python 3
 * `zbar` (install using your package manager of choice)
-* `numpy~=1.16.2`
-* `opencv-python~=4.0`
-* `pyzbar~=0.1.8`
+* Python requirements in `setup.py`
 
 
 Usage
 -----
 
-Simply: `python scanner.py [-h] --image IMAGE [--debug]`
+Simply: `checkmarx [-h] --image IMAGE [--debug]`
 
 If the `--debug` flag is used, extra information will be visualised during
 the processing / inference stages.
@@ -83,10 +80,10 @@ The entire processing flow occurs as follows:
   5. Collect all checkboxes in the document by searching for contours which
      match the stated size of the checkboxes from the config (these are sorted
      by vertical position)
-  6. Determine which boxes are marked based on whether they have over a certain
+  6. Determine which boxes are marxed based on whether they have over a certain
      percentage of black pixels
-  7. Return an array of marked boxes, sorted in descending order
-  8. Profit
+  7. Return an array of marxed boxes, sorted in descending order
+  8. Lose chains
 
 
 ### QR Code Data
@@ -99,11 +96,11 @@ containing all document information:
     "checkbox_size": [12, 10],
     "qr_size": [24, 24],
     "qr_offset": = [14, 14],
-    "fields": [
-        "Is this a questionnaire?",
-        "The seminar does a good job integrating.",
-        "I made new professional contacts.",
-        "One final question."
+    "checkbox_titles": [
+        ["Is this a questionnaire?"],
+        ["The seminar does a good job integrating."],
+        ["I made new professional contacts."],
+        ["One final question."]
     ]
 ```
 

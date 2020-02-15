@@ -11,7 +11,7 @@ import numpy as np
 from pyzbar import pyzbar
 from pyzbar.locations import Point
 
-from scanner.config import A4_SIZE, FEMINISTISKA_CONFIG
+from checkmarx.config import A4_SIZE, FEMINISTISKA_CONFIG
 
 
 def gkern(kernlen=21, nsig=3):
