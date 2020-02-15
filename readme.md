@@ -1,5 +1,4 @@
-CheckMarx
-=========
+![CheckMarx](static/img/logo.png)
 
 A prototype document scanner for finding checkboxes in questionnaires and
 determining which of them have been marxed.
