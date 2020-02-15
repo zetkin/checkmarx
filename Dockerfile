@@ -11,4 +11,4 @@ RUN apt update -qq && apt install -yq --no-install-recommends \
 COPY . .
 RUN pip install -e .
 
-ENTRYPOINT gunicorn --threads 1 -b 0.0.0.0:5000 -w 1 -k uvicorn.workers.UvicornWorker scanner.main:APP
+ENTRYPOINT gunicorn --threads 1 -b 0.0.0.0:5000 -w 1 -k uvicorn.workers.UvicornWorker checkmarx.main:APP
