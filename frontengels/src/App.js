@@ -26,30 +26,21 @@ class App extends React.Component {
           />
           <button
             onClick={()=>{
-                // console.log(this.state.picture[0]);
-                // const file = new Blob(this.state.picture[0]);
-                const fr = new FileReader();
-                fr.readAsArrayBuffer(this.state.picture[0]);
-                fr.onload = () => {
-                    var arrayBytes = fr.result;
-                    var bytes = new Uint8Array(arrayBytes);
-                    var form = new FormData();
-                    form.append("image", bytes);
-                    console.log(bytes);
-                    axios({
-                        method: "post",
-                        url: "/scan",
-                        data: form,
-                        headers: { 'Content-Type': 'multipart/form-data' }
-                    })
-                    .then((res) => {
-                        console.log(res);
-                        this.setState({ picture: null });
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                    });
-                };
+                var form = new FormData();
+                form.append("image", this.state.picture[0]);
+                axios({
+                    method: "post",
+                    url: "/scan",
+                    data: form,
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                .then((res) => {
+                    console.log(res);
+                    this.setState({ picture: null });
+                })
+                .catch((err) => {
+                    console.error(err);
+                });
             }} disabled={!this.state.picture}>Check Marx</button>
         </div>
       );
