@@ -1,5 +1,6 @@
 import React from 'react';
 import ImageUploader from 'react-images-upload';
+import axios from 'axios';
 import logo from './img/logo.png';
 import './App.css';
 
@@ -24,7 +25,21 @@ class App extends React.Component {
             imgExtension={['.jpg', '.png']}
           />
           <button
-            onClick={()=>{}} disabled={!this.state.picture}>Check Marx</button>
+            onClick={()=>{
+                const file = this.state.picture[0];
+                const fr = new FileReader();
+                fr.onload = (bytes) => {
+                    axios.post("/scan", bytes)
+                    .then((res) => {
+                        console.log(res);
+                        this.setState({ picture: null });
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                    });
+                };
+                fr.readAsDataURL(file);
+            }} disabled={!this.state.picture}>Check Marx</button>
         </div>
       );
     }
