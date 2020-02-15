@@ -32,9 +32,9 @@ class App extends React.Component {
           />
           <button
             onClick={()=>{
-                console.log(this.state.picture[0]);
                 var form = new FormData();
-                form.append("image", this.state.picture[0]);
+                var i = this.state.picture.length - 1;
+                form.append("image", this.state.picture[i]);
                 axios({
                     method: "post",
                     url: "/scan",
