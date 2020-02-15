@@ -9,6 +9,9 @@ EXTRAS_REQUIRE = {
     "test": ["pytest==5.2.2", "pytest-cov==2.8.1", "requests==2.22.0"],
 }
 
+with open("requirements.txt") as f:
+    requirements = f.read().splitlines()
+
 setup(
     name="checkmarx",
     version="0.0.1",
@@ -17,18 +20,7 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     python_requires="~=3.7",
-    install_requires=[
-        "fastapi==0.48.0",
-        "gunicorn==20.0.4",
-        "numpy~=1.16.2",
-        "opencv-contrib-python-headless==4.2.0.32",
-        "opencv-python-headless==4.2.0.32",
-        "pydantic==1.4",
-        "python-multipart==0.0.5",
-        "pyzbar~=0.1.8",
-        "starlette==0.12.9",
-        "uvicorn==0.11.2",
-    ],
+    install_requires=requirements,
     tests_require=EXTRAS_REQUIRE["test"],
     extras_require=EXTRAS_REQUIRE,
     zip_safe=True,
