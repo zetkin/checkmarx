@@ -10,7 +10,7 @@ EXTRAS_REQUIRE = {
 }
 
 setup(
-    name="CheckMarx",
+    name="checkmarx",
     version="0.0.1",
     description="Document OMR",
     license="Proprietary",
