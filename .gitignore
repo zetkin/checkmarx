@@ -6,6 +6,7 @@ __pycache__/
 *.pdf
 .venv
 src/CheckMarx.egg-info/
+frontengels/node_modules/
 
 !static/img/*
 !forms/questionnaire-filled.png
