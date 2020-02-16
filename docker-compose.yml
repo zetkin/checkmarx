@@ -17,5 +17,7 @@ services:
     entrypoint:
       - npm
       - start
+    environment:
+      HTTPS: "true"
     ports:
       - 3000:3000
