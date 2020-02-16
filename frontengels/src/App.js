@@ -36,7 +36,7 @@ class App extends React.Component {
       super(props);
       this.state = {
         picture: null,
-        result: [],
+        result: null,
       };
       this.webcamRef = React.createRef();
     }
@@ -52,17 +52,23 @@ class App extends React.Component {
         this.setState({picture: imageSrc});
       };
       const paragraphs = [];
-      for (var i = 0; i < this.state.result.length; i++) {
-          paragraphs.push(<p key={this.state.result[i]}>{this.state.result[i]} was Marxed</p>);
+      if (this.state.result) {
+        if (this.state.result.length) {
+          for (var i = 0; i < this.state.result.length; i++) {
+            paragraphs.push(<p key={this.state.result[i]}>{this.state.result[i]} was Marxed</p>);
+          }
+        } else {
+          paragraphs.push(<p>No result found</p>)
+        }
       }
       const image = this.state.picture ?
         <img src={this.state.picture} alt="webcam capture" /> : <Webcam
         audio={false}
-        height={720}
         ref={this.webcamRef}
         screenshotFormat="image/jpeg"
-        width={1280}
+        width="100%"
         videoConstraints={videoConstraints}
+        justifyContent="left"
       />
 
       return (
