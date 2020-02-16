@@ -45,6 +45,14 @@ Using the example image `forms/questionnaire-filled.png` should reproduce the
 following results.
 
 
+TODO / Future Ideas
+-------------------
+
+* Library userfruct: Book spaces / resources for activities
+* Optionally constraint satisfaction for reserving/booking rooms resources
+  depending on number of people / alternative times (look at Minizinc)
+
+
 Results
 -------
 
