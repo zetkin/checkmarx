@@ -348,6 +348,9 @@ def main(image_path, debug=False):
             draw_contour(image, contour)
 
     checked = checked_contours(clipped, checkboxes, threshold=0.01)
-    result = list(np.array(config.checkbox_titles)[np.array(checked)])
+    if checked:
+        result = list(np.array(config.checkbox_titles)[np.array(checked)])
+    else:
+        result = []
 
     return result
