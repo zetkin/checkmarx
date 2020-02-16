@@ -317,8 +317,8 @@ def checked_contours(img, contours, threshold):
     return [[c > threshold for c in color_columns] for color_columns in color]
 
 
-def main(image, debug=False):
-    image = cv.imread(image)
+def main(image_path, debug=False):
+    image = cv.imread(image_path)
     qr_obj = get_single_qr(image)
     config = fetch_config(qr_obj.data.decode())
 
