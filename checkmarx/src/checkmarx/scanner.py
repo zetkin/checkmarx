@@ -349,7 +349,10 @@ def main(image_path, debug=False):
 
     checked = checked_contours(clipped, checkboxes, threshold=0.01)
     if checked:
-        result = list(np.array(config.checkbox_titles)[np.array(checked)])
+        # TODO: Fix inconsistent number of checkboxes founded
+        titles = np.array(config.checkbox_titles)
+        checked = np.array(checked)
+        result = list(titles[:checked.shape[0], :][checked])
     else:
         result = []
 
