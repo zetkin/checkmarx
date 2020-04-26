@@ -1,0 +1,10 @@
+version: "3.7"
+
+services:
+  checkmarx:
+    stdin_open: true
+    tty: true
+    environment:
+      DEPLOYMENT_ENV: dev
+    volumes:
+      - $PWD/checkmarx:/usr/src/app
