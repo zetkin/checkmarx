@@ -3,11 +3,11 @@ __pycache__/
 *.jpg
 *.aux
 *.log
+checkmarx/static/img/*json
 *.pdf
 .venv
 *.egg-info/
 frontengels/node_modules/
 
-!checkmarx/static/img/*
 !forms/questionnaire-filled.png
 !forms/2019-11-09\ 12.37.44.jpg
