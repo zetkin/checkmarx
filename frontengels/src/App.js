@@ -70,6 +70,22 @@ class App extends React.Component {
         videoConstraints={videoConstraints}
         justifyContent="left"
       />
+      const scan = () => {
+                              var form = new FormData();
+                              form.append("image", b64toBlob(this.state.picture));
+                              axios({
+                                                          method: "post",
+                                                          url: "/scan",
+                                                          data: form,
+                                                          headers: { 'Content-Type': 'multipart/form-data' }
+                                                      })
+                              .then((res) => {
+                                                          this.setState({ picture: null, result: res.data.result });
+                                                      })
+                              .catch((err) => {
+                                                          console.error(err);
+                                                      });
+                          }
 
       return (
         <div className="App">
@@ -78,24 +94,7 @@ class App extends React.Component {
           </header>
           {image}
           <button onClick={capture}>Capture photo</button>
-          <button
-            onClick={()=>{
-                var form = new FormData();
-                form.append("image", b64toBlob(this.state.picture));
-                axios({
-                    method: "post",
-                    url: "/scan",
-                    data: form,
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                })
-                .then((res) => {
-                    this.setState({ picture: null, result: res.data.result });
-                })
-                .catch((err) => {
-                    console.error(err);
-                });
-            }} disabled={!this.state.picture}>Check Marx
-          </button>
+          <button onClick={scan} disabled={!this.state.picture}>Check Marx</button>
           {paragraphs}
         </div>
       );

@@ -9,6 +9,8 @@ from typing import List
 
 import pydantic
 
+from checkmarx.types import Point
+
 
 class Config(pydantic.BaseModel):
     """
@@ -18,16 +20,22 @@ class Config(pydantic.BaseModel):
         page_size: Size of the document.
         checkbox_size: Size of a checkbox in the document.
         qr_size: Size of the QR code.
-        qr_offset: Offset from the top-right corner of the QR code to the
-          top-right corner of the document.
+        qr_offset: Offset from the top-left corner of the document to the
+          top-left corner of the QR code.
         fields: Questions in the questionnaire.
     """
 
-    page_size: List[int]
-    checkbox_size: List[int]
-    qr_size: List[int]
-    qr_offset: List[int]
+    page_size: Point
+    checkbox_size: Point
+    qr_size: Point
+    qr_offset: Point
     checkbox_titles: List[List[str]]
+
+    @pydantic.validator("*", pre=True)
+    def convert_to_named_tuple(cls, value, field):
+        if field.type_ is Point:
+            return Point(*value)
+        return value
 
 
 A4_SIZE = [210, 297]
@@ -38,7 +46,7 @@ FEMINISTISKA_CONFIG = Config.parse_obj(
         "page_size": A4_SIZE,
         "checkbox_size": [13, 9],
         "qr_size": [28, 27],
-        "qr_offset": [11, 10],
+        "qr_offset": [171, 10],
         "checkbox_titles": [
             ["Header"],
             ["15 Feb 16:00-18:00"],

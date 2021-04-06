@@ -1,4 +1,4 @@
-FROM python:3.7-slim
+FROM python:3.9-slim
 
 WORKDIR /usr/src/app
 
@@ -6,11 +6,10 @@ WORKDIR /usr/src/app
 RUN apt update -qq && apt install -yq --no-install-recommends \
       build-essential \
       libglib2.0-0 \
-      libzbar-dev
+      libjpeg-dev \
+      libpng-dev
 
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 COPY . .
 RUN pip install -e .
-
-ENTRYPOINT entrypoint.sh

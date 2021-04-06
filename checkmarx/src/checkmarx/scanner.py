@@ -3,33 +3,31 @@ Notes:
     * An A4 page is 210mm x 297mm.
 """
 
-from time import sleep
-from typing import List, Tuple
+import re
 
 import cv2 as cv
 import numpy as np
-from pyzbar import pyzbar
-from pyzbar.locations import Point
+from PIL import Image
 
-from checkmarx.config import A4_SIZE, FEMINISTISKA_CONFIG
+from checkmarx import utils
+from checkmarx.config import FEMINISTISKA_CONFIG
 from checkmarx.exceptions import QRNotFound
+from checkmarx.types import Point, Polygon, QR
+
+CORNER_PATTERN = "".join(r" (\((?P<x%s>\d+),(?P<y%s>\d+)\))" % (i, i) for i in range(4))
+QUIRC_RE = re.compile(
+    r"corners:(?P<corners>%s).+Payload: (?P<payload>.+)" % CORNER_PATTERN,
+    flags=re.DOTALL,
+)
 
 
-def gkern(kernlen=21, nsig=3):
-    """Returns a 2D Gaussian kernel."""
-
-    x = np.linspace(-nsig, nsig, kernlen + 1)
-    kern1d = np.diff(st.norm.cdf(x))
-    kern2d = np.outer(kern1d, kern1d)
-    return kern2d / kern2d.sum()
-
-
-def get_single_qr(img):
-    """Get a single QR code from an image."""
-    qr_codes = pyzbar.decode(img)
-    if len(qr_codes) != 1:
-        raise QRNotFound(f"Expected 1 QR code, found {len(qr_codes)}")
-    return qr_codes[0]
+def get_single_qr(img_path):
+    output = utils.exe("./qrtest", ("-v", "-d", img_path))
+    match = QUIRC_RE.search(output)
+    if match:
+        corners = [Point(*map(int, match.group(f"x{i}", f"y{i}"))) for i in range(4)]
+        return QR(match.group("payload"), Polygon(*corners))
+    raise QRNotFound
 
 
 def fetch_config(url):
@@ -37,52 +35,18 @@ def fetch_config(url):
     return FEMINISTISKA_CONFIG
 
 
-def wait():
-    while cv.waitKey(0) != 27:
-        sleep(0.1)
-    cv.destroyAllWindows()
-
-
 def draw_contour(img, contour):
     """Debug function for showing a contour on an image."""
     copy = img.copy()
-    cv.drawContours(copy, [contour], -1, (0, 255, 0), 2)
-    cv.imshow("Contour", copy)
-    wait()
-
-
-def locate_document_contour(img):
-    """Find a document-like contour in an edged image."""
-    # TODO: This is currently an unused function but could be sed to support
-    # the estimated document contour calculated from the QR coordinates.
-
-    contours, _ = cv.findContours(edged.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-    contours = sorted(contours, key=cv.contourArea, reverse=True)[
-        :5
-    ]  # 5 largest contours
-
-    # loop over the contours
-    for c in contours:
-        # approximate the contour
-        peri = cv.arcLength(c, True)
-        approx = cv.approxPolyDP(c, 0.02 * peri, True)
-
-        # if our approximated contour has four points, then we
-        # can assume that we have found our screen
-
-        # TODO: We should prioritise 4 but also accept up to 8. We should construct
-        # ...   an algorithm based on the lenght and point-count. We can also assume
-        # ...   that the predominant color will be white.
-        if len(approx) == 4:
-            paper_contour = approx
-            break
-
-    return paper_contour
+    cv.drawContours(copy, contour, -1, (0, 255, 0), 2)
+    imshow(copy)
 
 
 def four_point_transform(image, pts):
-    tl, bl, br, tr = pts
-    rect = np.array([tl, tr, br, bl]).astype("float32")
+    # tl, bl, br, tr = pts
+    # rect = np.array(pts).astype("float32")
+    tl, tr, br, bl = pts
+    rect = pts.astype("float32")
 
     # compute the width of the new image, which will be the
     # maximum distance between bottom-right and bottom-left
@@ -116,71 +80,31 @@ def four_point_transform(image, pts):
     return warped
 
 
-def euclidean_distance(a: Point, b: Point) -> float:
-    """Euclidean distance between two points."""
-    return np.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
-
-
-def rotation(a: Point, b: Point) -> float:
-    """Get the rotation from horizontal for the line a->b. In units of
-    cos^{-1}."""
-    l = euclidean_distance(a, b)
-    x = b.x - a.x
-    return x / l
-
-
-def locate_document_contour_qr(
-    image,
-    qr_coords: List[Point],
-    page_size: Tuple[int, int],
-    qr_size: Tuple[int, int],
-    qr_offset: Tuple[int, int],
+def locate_document(
+    qr_coords: Polygon,
+    page_size: Point,
+    qr_size: Point,
+    qr_offset: Point,
 ):
     """Based on finding a single QR code in the image, return estimated
-    document coordinates based on the factors {X,Y}_{SCALE,BUFFER}.
-
-    Notes:
-        This entire function currently relies on the document being in
-        portrait mode!
-
-    TODO:
-        Account for skewness and perspective shift.
-
-    The coordinates are returned as a tuple in the form:
-        (top left, bottom left, bottom right, top right)
+    document coordinates.
     """
-    phi = rotation(qr_coords[0], qr_coords[3])
+    i_hat = np.array(qr_coords.topright - qr_coords.topleft) / qr_size.x
+    j_hat = np.array(qr_coords.bottomleft - qr_coords.topleft) / qr_size.y
+    # `A` is the transformation matrix for change of basis
+    A = np.c_[i_hat, j_hat]
 
-    distances = [
-        euclidean_distance(a, b)
-        for a, b in zip(qr_coords, qr_coords[1:] + [qr_coords[0]])
-    ]
+    topleft_mm = -np.array(qr_offset)
+    topright_mm = topleft_mm + [page_size.x, 0]
+    bottomleft_mm = topleft_mm + [0, page_size.y]
+    bottomright_mm = topleft_mm + page_size
 
-    # Get the estimated {vertical,horizontal} lengths of the QR code in pixels.
-    # Given that the QR decoder outputs coordinates in a consistent positional
-    # order, we can compute the means of parallel edges.
-    qr_y = np.mean(distances[::2])
-    qr_x = np.mean(distances[1::2])
+    topleft = A.dot(topleft_mm) + qr_coords.topleft
+    topright = A.dot(topright_mm) + qr_coords.topleft
+    bottomleft = A.dot(bottomleft_mm) + qr_coords.topleft
+    bottomright = A.dot(bottomright_mm) + qr_coords.topleft
 
-    # This could be optimised and a rotation matrix used, it would
-    # require a matrix library in the target language however.
-
-    x_scale = page_size[0] / qr_size[0]
-    y_scale = page_size[1] / qr_size[1]
-    x_offset = qr_offset[0] / qr_size[0]
-    y_offset = qr_offset[1] / qr_size[1]
-
-    x0 = qr_coords[0].x - phi * qr_x * (x_scale - (1 + x_offset))
-    x1 = qr_coords[1].x - phi * qr_x * (x_scale - (1 + x_offset))
-    x2 = qr_coords[2].x + phi * qr_x * x_offset
-    x3 = qr_coords[3].x + phi * qr_x * x_offset
-
-    y0 = qr_coords[0].y - phi * qr_y * y_offset
-    y1 = qr_coords[1].y + phi * qr_y * (y_scale - (1 + y_offset))
-    y2 = qr_coords[2].y + phi * qr_y * (y_scale - (1 + y_offset))
-    y3 = qr_coords[3].y - phi * qr_y * y_offset
-
-    return ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
+    return (topleft, topright, bottomright, bottomleft)
 
 
 def calculate_filter_blocksize(doc_width):
@@ -248,6 +172,7 @@ def aspect_ratio(contour, ar, threshold):
 def within_alignment():
     """Given a set of contours, find a common vertical line and remove
     those which fall outside."""
+    # TODO
     pass
 
 
@@ -281,14 +206,6 @@ def get_checkboxes(img, page_size, checkbox_size):
     ]
 
 
-def extract_contour(image, contour):
-    """Extract the image data within a contour."""
-    mask = np.zeros(image.shape[:-1], dtype="uint8")
-    cv.drawContours(mask, [contour], -1, 1, -1)
-    mask = np.stack([mask,] * image.shape[-1], axis=-1)
-    return image * mask
-
-
 def percentage_colored(img, contour):
     """Return the percentage of contour within a binary image which is colored."""
     mask = np.zeros(img.shape, dtype="uint8")
@@ -317,31 +234,43 @@ def checked_contours(img, contours, threshold):
     return [[c > threshold for c in color_columns] for color_columns in color]
 
 
-def main(image_path, debug=False):
-    image = cv.imread(image_path)
-    qr_obj = get_single_qr(image)
-    config = fetch_config(qr_obj.data.decode())
+def imshow(img):
+    import matplotlib.pyplot as plt
+    plt.imshow(img)
+    plt.show()
 
-    contour = locate_document_contour_qr(
-        image, qr_obj.polygon, config.page_size, config.qr_size, config.qr_offset,
+
+def main(image_path, debug):
+    image_pil = Image.open(image_path)
+    image = np.array(image_pil)
+
+    qr_obj = get_single_qr(image_path)
+    if debug:
+        print("QR location:", qr_obj.polygon)
+        draw_contour(image, np.array(qr_obj.polygon).astype("int32").reshape(4, 1, 2))
+
+    config = fetch_config(qr_obj.data)
+
+    contour = locate_document(
+        qr_obj.polygon,
+        config.page_size,
+        config.qr_size,
+        config.qr_offset,
     )
     contour_np = np.array(contour).astype("int32")
-
     if debug:
+        print("Document location:", contour)
         draw_contour(image, contour_np.reshape(4, 1, 2))
 
     image = four_point_transform(image, contour_np)
     if debug:
-        cv.imshow("A", image)
-        wait()
+        imshow(image)
 
     clipped = clip_image(image)
     if debug:
-        cv.imshow("A", clipped)
-        wait()
+        imshow(clipped)
 
     checkboxes = get_checkboxes(clipped, config.page_size, config.checkbox_size)
-
     if debug:
         print(f"Found {len(checkboxes)} check boxes")
         for contour in checkboxes:
@@ -349,10 +278,9 @@ def main(image_path, debug=False):
 
     checked = checked_contours(clipped, checkboxes, threshold=0.01)
     if checked:
-        # TODO: Fix inconsistent number of checkboxes founded
         titles = np.array(config.checkbox_titles)
         checked = np.array(checked)
-        result = list(titles[:checked.shape[0], :][checked])
+        result = list(titles[: checked.shape[0], :][checked])
     else:
         result = []
 

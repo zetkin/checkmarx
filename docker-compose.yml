@@ -5,6 +5,16 @@ services:
     image: checkmarx
     build:
       context: checkmarx
+    entrypoint: uvicorn
+    command:
+      - "--timeout-keep-alive"
+      - "999"
+      - "--reload"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "5000"
+      - "checkmarx.main:APP"
     ports:
       - 5000:5000
 
