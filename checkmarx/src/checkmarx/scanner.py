@@ -1,22 +1,18 @@
-"""
-Notes:
-    * An A4 page is 210mm x 297mm.
-"""
-
 import re
 
 import cv2 as cv
 import numpy as np
+import requests
 from PIL import Image
 
 from checkmarx import utils
-from checkmarx.config import FEMINISTISKA_CONFIG
+from checkmarx.config import DocumentConfig
 from checkmarx.exceptions import QRNotFound
 from checkmarx.types import Point, Polygon, QR
 
 CORNER_PATTERN = "".join(r" (\((?P<x%s>\d+),(?P<y%s>\d+)\))" % (i, i) for i in range(4))
 QUIRC_RE = re.compile(
-    r"corners:(?P<corners>%s).+Payload: (?P<payload>.+)" % CORNER_PATTERN,
+    r"corners:(?P<corners>%s).+Payload: (?P<data>.+)" % CORNER_PATTERN,
     flags=re.DOTALL,
 )
 
@@ -24,15 +20,21 @@ QUIRC_RE = re.compile(
 def get_single_qr(img_path):
     output = utils.exe("./qrtest", ("-v", "-d", img_path))
     match = QUIRC_RE.search(output)
+    # TODO: Raise error if multiple found
     if match:
         corners = [Point(*map(int, match.group(f"x{i}", f"y{i}"))) for i in range(4)]
-        return QR(match.group("payload"), Polygon(*corners))
+
+        # TODO: Replace with real URL when ready
+        data = match.group("data")
+        data = "http://metadata-server:8000/feminism-handout"
+
+        return QR(data, Polygon(*corners))
     raise QRNotFound
 
 
 def fetch_config(url):
     """Given a QR decoded url, return the doc config."""
-    return FEMINISTISKA_CONFIG
+    return DocumentConfig.parse_obj(requests.get(url).json())
 
 
 def draw_contour(img, contour):
@@ -43,8 +45,6 @@ def draw_contour(img, contour):
 
 
 def four_point_transform(image, pts):
-    # tl, bl, br, tr = pts
-    # rect = np.array(pts).astype("float32")
     tl, tr, br, bl = pts
     rect = pts.astype("float32")
 
@@ -236,6 +236,7 @@ def checked_contours(img, contours, threshold):
 
 def imshow(img):
     import matplotlib.pyplot as plt
+
     plt.imshow(img)
     plt.show()
 
@@ -245,6 +246,7 @@ def main(image_path, debug):
     image = np.array(image_pil)
 
     qr_obj = get_single_qr(image_path)
+
     if debug:
         print("QR location:", qr_obj.polygon)
         draw_contour(image, np.array(qr_obj.polygon).astype("int32").reshape(4, 1, 2))

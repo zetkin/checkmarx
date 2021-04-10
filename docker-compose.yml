@@ -31,3 +31,8 @@ services:
       HTTPS: "true"
     ports:
       - 3000:3000
+
+  metadata-server:
+    image: metadata-server
+    build:
+      context: metadata-server
