@@ -12,7 +12,7 @@ via an online resource rather than directly encoded in the QR code), such as:
   * Checkmark titles
 
 This information will be used to locate the checkboxes and determine which have
-been marxed and their corresponding questions.
+been marxed and their corresponding fields.
 
 
 Requirements
@@ -22,15 +22,11 @@ This project relies heavily on a good QR code detector. The polygon output of
 the QR code is used to infer the document's coordinates, which in turn is used
 to infer checkbox sizes (in pixels, the sizes in mm must be defined).
 
-At the moment `pyzbar` is used (which uses the `zbar` project). `zbar` seems a
-bit unreliable, especially in cases where the QR code has been rotated. It also
-does not output detailed information about the orientation of the QR code,
-which could be very useful to speed up processing time.
-
-Library requirements:
-* Python 3
-* `zbar` (install using your package manager of choice)
-* Python requirements in `setup.py`
+At the moment [`quirc`](https://github.com/dlbeer/quirc/) is used which is
+written in C. A pre-compiled program has been committed to this repository
+which works in the docker setup defined. If a local setup is required, pull
+the `quirc` repo and compile the `qrtest` program then either copy it or link
+to it from this directory.
 
 
 Usage
@@ -41,36 +37,6 @@ Simply: `checkmarx [-h] --image IMAGE [--debug]`
 If the `--debug` flag is used, extra information will be visualised during
 the processing / inference stages.
 
-Using the example image `forms/questionnaire-filled.png` should reproduce the
-following results.
-
-
-TODO / Future Ideas
--------------------
-
-* Library userfruct: Book spaces / resources for activities
-* Optionally constraint satisfaction for reserving/booking rooms resources
-  depending on number of people / alternative times (look at Minizinc)
-
-
-Results
--------
-
-Inferred document shape from QR code:
-
-![Document](static/img/whole.png)
-
-Discovered checkbox:
-
-![Document](static/img/checkbox.png)
-
-Result:
-```
-[ ] Is this a questionnaire?
-[x] The seminar does a good job integrating.
-[x] I made new professional contacts.
-[ ] One final question.
-```
 
 Implementation Details
 ----------------------
@@ -78,7 +44,7 @@ Implementation Details
 ### Processing Flow
 
 The entire processing flow occurs as follows:
-  1. Find a QR code using `pyzbar`
+  1. Find a QR code using a system call to `quirc`
   2. Fetch the document config from the QR code message
   3. Infer the document shape (in pixels) based on the size of the QR polygon,
      and the details from the document config
@@ -99,6 +65,7 @@ The QR code should encode a URL which can be used to fetch a JSON object
 containing all document information:
 
 ```json
+{
     "page_size": [210, 297],
     "checkbox_size": [12, 10],
     "qr_size": [24, 24],
@@ -109,11 +76,14 @@ containing all document information:
         ["I made new professional contacts."],
         ["One final question."]
     ]
+}
 ```
 
 
 Further Resources
 -----------------
+
+https://github.com/dlbeer/quirc/
 
 https://docs.opencv.org/3.4/da/d6e/tutorial_py_geometric_transformations.html
 
