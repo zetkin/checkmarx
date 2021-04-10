@@ -163,20 +163,23 @@ def four_sided(contour):
     return 2 < len(cv.approxPolyDP(contour, 0.02 * perimeter, closed=True)) < 6
 
 
-def aspect_ratio(contour, ar, threshold):
+def within_aspect_ratio(contour, aspect_ratio, threshold):
     """Return whether a contour has an aspect ratio within a given threshold."""
     _x, _y, w, h = cv.boundingRect(contour)
-    return ar * (1 - threshold) < w / h < ar * (1 + threshold)
+    return aspect_ratio * (1 - threshold) < w / h < aspect_ratio * (1 + threshold)
 
 
-def within_alignment():
-    """Given a set of contours, find a common vertical line and remove
-    those which fall outside."""
-    # TODO
+def group_columns(boxes, threshold_px):
+    """Group boxes by their vertical alignment within a given threshold."""
     pass
 
 
-def locate_rectangles(img, area, ar, threshold=0.40):
+def minimum_rows(boxes, minimum):
+    """Filter away columns of boxes which have fewer than `minimum` rows."""
+    pass
+
+
+def locate_rectangles(img, area, aspect_ratio, threshold=0.40):
     """Locate all rectangles in an image that have an area which falls
     within +/- :arg:`threshold` percent of :arg:`area`."""
     contours, _ = cv.findContours(img.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
@@ -184,7 +187,7 @@ def locate_rectangles(img, area, ar, threshold=0.40):
     for f in (
         lambda x: has_area(x, area, threshold),
         four_sided,
-        lambda x: aspect_ratio(x, ar, threshold),
+        lambda x: within_aspect_ratio(x, aspect_ratio, threshold),
     ):
         contours = filter(f, contours)
 
@@ -198,7 +201,8 @@ def get_checkboxes(img, page_size, checkbox_size):
     sf = img.shape[0] / page_size[1]  # px/mm
     area_px = np.prod(checkbox_size) * sf ** 2
     # TODO: Also filter by aspect ratio
-    boxes = locate_rectangles(img, area_px, checkbox_size[0] / checkbox_size[1])
+    aspect_ratio = checkbox_size[0] / checkbox_size[1]
+    boxes = locate_rectangles(img, area_px, aspect_ratio)
     boxes = sorted(boxes, key=lambda x: centrepoint(x)[1])  # Sort by highest on page
     return [
         [shrink_countour(b, 0.9, img.shape[::-1]).round().astype(np.int64)]
