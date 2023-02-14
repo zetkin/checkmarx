@@ -6,5 +6,5 @@ Pillow==8.3.2
 pydantic==1.8.2
 python-multipart==0.0.5
 requests
-starlette==0.13.6
+starlette==0.25.0
 uvicorn==0.13.4
